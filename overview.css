@@ -22,7 +22,13 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 .caption { line-height: 1.25; min-height: 30px; }
 .caption span { display: block; }
 .overlay { position: fixed; inset: 0; z-index: 20; background: rgba(245,245,245,.72); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
-.stage { position: absolute; inset: 48px 30px 54px; overflow: hidden; touch-action: pan-y; }
+/* Scoped to #modal only (not .overlay, which #info also uses and needs to scroll
+   vertically): the image viewer has no native scroll content of its own - horizontal
+   drag is fully JS-driven via pointer events - so no native vertical pan/overscroll
+   is needed here, and leaving it enabled is what lets a big downward drag reach
+   iOS Safari's native Pull-to-Refresh. */
+#modal { touch-action: none; overscroll-behavior-y: none; }
+.stage { position: absolute; inset: 48px 30px 54px; overflow: hidden; touch-action: none; }
 .modal-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; -webkit-user-select: none; }
 .modal-footer button { font-size: 22px; min-width: 44px; min-height: 44px; text-align: right; }
 .info { overflow-y: auto; overscroll-behavior: contain; }

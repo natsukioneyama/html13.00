@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no, email=no, address=no, date=no" />
+
+  <title>PDF Request — NATSUKI ONEYAMA</title>
+
+  <meta name="description"
+        content="Request the commercial portfolio PDF for Paris-based MAKE-UP ARTIST Natsuki Oneyama." />
+
+  <link rel="stylesheet" href="./pdf-request.css" />
+</head>
+
+<body>
+
+<header class="pdf-request-header">
+  <p class="pdf-request-name">Natsuki Oneyama</p>
+  <a class="pdf-request-back" href="overview.html" aria-label="Back to site">×</a>
+</header>
+
+<main class="pdf-request-page">
+  <div class="pdf-request-inner">
+
+    <h1 class="pdf-request-title">PDF Request</h1>
+    <p class="pdf-request-intro">Select the portfolio you would like to receive.</p>
+
+    <form class="pdf-request-form" action="https://formspree.io/f/xeajyvgn" method="POST">
+
+      <input type="text" name="_gotcha" class="pdf-request-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+      <div class="pdf-request-field">
+        <label for="pdf-request-name">Full name <span aria-hidden="true">*</span></label>
+        <input type="text" id="pdf-request-name" name="name" autocomplete="off" autocorrect="off" spellcheck="false" required>
+      </div>
+
+      <div class="pdf-request-field">
+        <label for="pdf-request-email">Email address <span aria-hidden="true">*</span></label>
+        <input type="email" id="pdf-request-email" name="email" required>
+      </div>
+
+      <div class="pdf-request-field">
+        <label for="pdf-request-message">Message (optional)</label>
+        <textarea id="pdf-request-message" name="message" rows="4"></textarea>
+      </div>
+
+      <fieldset class="pdf-request-fieldset">
+        <legend>Portfolio selection <span aria-hidden="true">*</span></legend>
+
+        <label class="pdf-request-checkbox">
+          <input type="checkbox" name="portfolio" value="Digital / Campaign">
+          <span>Digital / Campaign</span>
+        </label>
+
+        <label class="pdf-request-checkbox">
+          <input type="checkbox" name="portfolio" value="Beauty">
+          <span>Beauty</span>
+        </label>
+
+        <label class="pdf-request-checkbox">
+          <input type="checkbox" name="portfolio" value="Editorial">
+          <span>Editorial</span>
+        </label>
+
+        <label class="pdf-request-checkbox">
+          <input type="checkbox" name="portfolio" value="Hair / Grooming">
+          <span>Hair Grooming</span>
+        </label>
+      </fieldset>
+
+      <button type="submit" class="pdf-request-submit">Request PDF</button>
+
+      <p class="pdf-request-status" role="status" aria-live="polite"></p>
+
+    </form>
+
+  </div>
+</main>
+
+<script>
+(function () {
+  var form = document.querySelector(".pdf-request-form");
+  var status = document.querySelector(".pdf-request-status");
+  var submitButton = document.querySelector(".pdf-request-submit");
+  var checkboxes = form.querySelectorAll('input[name="portfolio"]');
+
+  function atLeastOnePortfolioChecked() {
+    return Array.prototype.some.call(checkboxes, function (checkbox) {
+      return checkbox.checked;
+    });
+  }
+
+  function updatePortfolioValidity() {
+    var message = atLeastOnePortfolioChecked() ? "" : "Please select at least one portfolio.";
+    Array.prototype.forEach.call(checkboxes, function (checkbox) {
+      checkbox.setCustomValidity(message);
+    });
+  }
+
+  Array.prototype.forEach.call(checkboxes, function (checkbox) {
+    checkbox.addEventListener("change", updatePortfolioValidity);
+  });
+
+  updatePortfolioValidity();
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    updatePortfolioValidity();
+
+    if (!form.reportValidity()) {
+      return;
+    }
+
+    submitButton.disabled = true;
+    status.textContent = "Sending…";
+
+    fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { Accept: "application/json" }
+    })
+      .then(function (response) {
+        if (response.ok) {
+          status.textContent = "Thank you. Your request has been sent.";
+          form.reset();
+          updatePortfolioValidity();
+        } else {
+          return response.json().then(function (data) {
+            var errorMessage = data && data.errors
+              ? data.errors.map(function (error) { return error.message; }).join(", ")
+              : "Something went wrong. Please try again.";
+            status.textContent = errorMessage;
+          });
+        }
+      })
+      .catch(function () {
+        status.textContent = "Something went wrong. Please try again.";
+      })
+      .finally(function () {
+        submitButton.disabled = false;
+      });
+  });
+})();
+</script>
+
+</body>
+</html>

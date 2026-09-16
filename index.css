@@ -1,0 +1,63 @@
+/* index.html: Selected Works top page. Shares base resets, .brand and .bottom-nav
+   positioning/sizing/responsive-behavior with overview.css (loaded first) - only
+   font-weight is overridden here, via id selectors, so overview.html is untouched. */
+:root {
+  /* First-pass placeholder sizes - not final. Easy to retune from here. */
+  --index-thumb-width: min(46vw, 420px);
+  --index-col-gap: 16px;
+  --index-row-gap: 56px;
+  --index-modal-height: 62vh;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root { --index-modal-height: 68vh; }
+}
+@media (min-width: 1024px) {
+  :root {
+    --index-thumb-width: min(34vw, 460px);
+    --index-col-gap: 24px;
+    --index-row-gap: 72px;
+    --index-modal-height: 76vh;
+  }
+}
+
+#index-brand { font-weight: bold; }
+#index-nav { justify-content: flex-end; }
+#index-nav a { font-weight: bold; }
+
+#index-main { padding: 96px var(--edge) 96px; }
+.index-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--index-col-gap);
+  align-items: start;
+}
+/* Two independent vertical flows - deliberately not a masonry/packing algorithm:
+   each column stacks its own items, so one column's image heights never affect
+   where the other column's next item lands. */
+.index-col { display: flex; flex-direction: column; align-items: center; gap: var(--index-row-gap); }
+.index-thumb { display: block; }
+.index-thumb img { display: block; width: var(--index-thumb-width); max-width: 100%; height: auto; }
+
+/* Horizontal project modal: a single native-scroll filmstrip (no snap, no JS drag) -
+   gap 0, portrait/landscape share the same height so both read as equally large. */
+#index-modal { touch-action: pan-x; overscroll-behavior-y: none; }
+#index-modal:focus-visible { outline: none; }
+#index-modal-header { line-height: 1.2; }
+#index-modal-caption { margin-top: 10px; font-weight: normal; }
+#index-stage {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: var(--index-modal-height);
+  display: flex; gap: 0;
+  overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#index-stage::-webkit-scrollbar { display: none; }
+#index-stage img, #index-stage video {
+  height: 100%; width: auto; flex: 0 0 auto; display: block;
+  object-fit: contain; user-select: none; -webkit-user-select: none;
+}
+
+@media (max-width: 767px) {
+  #index-main { padding: 72px var(--edge) 72px; }
+}

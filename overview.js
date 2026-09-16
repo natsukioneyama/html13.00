@@ -9,8 +9,31 @@
   const fine = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   let selected = -1, current = -1, active = null, returnFocus, scrollY = 0;
-  let animation = null, wheelSum = 0, wheelLast = 0, wheelCooldown = 0, gesture = null;
+  let wheelSum = 0, wheelLast = 0, wheelCooldown = 0, gesture = null;
   const videos = new Set(), visibleVideos = new Set();
+  // Two-node slide transition state: `liveNode` is the settled, currently-visible media
+  // element (the one drag/keyboard/wheel act on); `transitioning` locks out new navigation
+  // input for the duration of a committed slide so inputs never overlap animations.
+  let liveNode = null, transitioning = false, activeAnimations = [];
+  const SLIDE_MS = 280, SLIDE_EASING = 'ease-out';
+  // Neighbor preloading: warms the browser's network+decode cache for the media one step
+  // ahead/behind the current index (wrapping across the 51-item sequence), so by the time
+  // the user actually navigates there the image is already fetched/decoded. Never awaited
+  // by navigation itself, so it can never slow down the response to input.
+  const preloadedSrcs = new Set();
+  function preloadMedia(index) {
+    const m = sequence[index]?.media;
+    if (!m || m.type === 'video' || preloadedSrcs.has(m.full)) return;
+    preloadedSrcs.add(m.full);
+    const img = new Image();
+    img.src = m.full;
+    img.decode?.().catch(() => {});
+  }
+  function preloadNeighbors(index) {
+    const n = sequence.length;
+    preloadMedia((index + 1) % n);
+    preloadMedia((index - 1 + n) % n);
+  }
 
   function caption(target, index) {
     target.replaceChildren();
@@ -80,22 +103,24 @@
     $('overview').inert = true; $('overview-nav').inert = true; $('info-toggle').inert = true;
     panel.hidden = false; syncVideos();
   }
-  function disposeMedia() {
-    animation?.cancel(); animation = null;
-    stage.querySelectorAll('video').forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
-    stage.replaceChildren();
+  function releaseVideo(node) {
+    if (node && node.tagName === 'VIDEO') { node.pause(); node.removeAttribute('src'); node.load(); }
+  }
+  function disposeAll() {
+    activeAnimations.forEach(a => a.cancel()); activeAnimations = []; transitioning = false;
+    [...stage.children].forEach(n => { releaseVideo(n); n.remove(); });
+    liveNode = null;
   }
   function close() {
     if (!active) return;
-    disposeMedia(); active.hidden = true; active = null; current = -1; gesture = null;
+    disposeAll(); active.hidden = true; active = null; current = -1; gesture = null;
     $('overview').inert = false; $('overview-nav').inert = false; $('info-toggle').inert = false;
     $('info-toggle').setAttribute('aria-expanded','false');
     Object.assign(document.body.style, {position:'', top:'', width:''});
     window.scrollTo(0,scrollY); returnFocus?.focus({preventScroll:true}); syncVideos();
   }
-  function show(index, direction = 0, axis = 'Y') {
-    if (index < 0 || index >= sequence.length) return false;
-    disposeMedia(); current = index; const {project, media:m} = sequence[index];
+  function createNode(index) {
+    const {project, media:m} = sequence[index];
     const node = document.createElement(m.type === 'video' ? 'video' : 'img');
     node.className = 'modal-media'; node.draggable = false;
     if (m.type === 'video') {
@@ -105,21 +130,63 @@
       }, {once:true});
       node.src = m.src;
     } else { node.alt = m.alt || project.title; node.src = m.full; node.decoding = 'async'; }
-    stage.append(node); caption($('modal-caption'), index);
-    if (direction && !reduced()) animation = node.animate([
-      {transform:`translate${axis}(${direction * 16}%)`, opacity:.3},
-      {transform:`translate${axis}(0)`, opacity:1}
-    ], {duration:220, easing:'ease-out'});
+    return node;
+  }
+  // Initial display (modal/first open): no previous node, so no slide - just place it.
+  function settle(index) {
+    disposeAll(); current = index;
+    const node = createNode(index);
+    stage.append(node); liveNode = node;
+    caption($('modal-caption'), index);
+    preloadNeighbors(index);
+  }
+  // Committed next/prev transition: outgoing and incoming coexist in `.stage` (both
+  // absolutely positioned, see overview.css) and slide simultaneously in the same
+  // horizontal direction - outgoing exits the side incoming enters from the opposite
+  // side, so they read as one continuous strip rather than a cross-fade. direction:
+  // +1 = Next (outgoing exits left, incoming enters from the right), -1 = Previous
+  // (mirrored). Pure transform, no opacity, so the movement itself reads as the effect.
+  function slide(nextIndex, direction) {
+    if (transitioning) return false;
+    const outgoing = liveNode;
+    const incoming = createNode(nextIndex);
+    stage.append(incoming);
+    current = nextIndex; liveNode = incoming;
+    caption($('modal-caption'), nextIndex);
+    preloadNeighbors(nextIndex);
+    if (reduced()) { if (outgoing) { releaseVideo(outgoing); outgoing.remove(); } return true; }
+    transitioning = true;
+    incoming.style.willChange = 'transform';
+    if (outgoing) outgoing.style.willChange = 'transform';
+    // Continue from wherever a released swipe left the outgoing node (its inline
+    // translateX from the drag), rather than resetting to 0 and losing the gesture's motion.
+    const fromOut = outgoing ? (outgoing.style.transform || 'translateX(0%)') : null;
+    const inAnim = incoming.animate(
+      [{transform:`translateX(${direction * 100}%)`}, {transform:'translateX(0%)'}],
+      {duration:SLIDE_MS, easing:SLIDE_EASING, fill:'forwards'}
+    );
+    const outAnim = outgoing ? outgoing.animate(
+      [{transform:fromOut}, {transform:`translateX(${-direction * 100}%)`}],
+      {duration:SLIDE_MS, easing:SLIDE_EASING, fill:'forwards'}
+    ) : null;
+    activeAnimations = [inAnim, outAnim].filter(Boolean);
+    Promise.all(activeAnimations.map(a => a.finished.catch(() => {}))).then(() => {
+      if (outgoing) { releaseVideo(outgoing); outgoing.remove(); }
+      incoming.style.willChange = ''; incoming.style.transform = '';
+      activeAnimations.forEach(a => a.cancel()); activeAnimations = [];
+      transitioning = false;
+    });
     return true;
   }
   // Shared next/prev step for keyboard, wheel and swipe: loops across the whole
   // portfolio-data.js sequence (all projects back-to-back), wrapping at the very
-  // first/last media item rather than stopping or looping per-project.
-  function step(direction, axis = 'Y') {
-    if (current < 0) return false;
+  // first/last media item rather than stopping or looping per-project. Locked out
+  // entirely while a transition is already playing (see `transitioning`).
+  function step(direction) {
+    if (transitioning || current < 0) return false;
     let next = current + direction;
     if (next >= sequence.length) next = 0; else if (next < 0) next = sequence.length - 1;
-    return show(next, direction, axis);
+    return slide(next, direction);
   }
   // Safari/WebKit resolves :focus-visible on a script-focused element as true even when
   // the interaction that triggered it was a mouse click on a different element (Chromium/
@@ -131,7 +198,7 @@
   }
   function openModal(index, viaKeyboard = false) {
     lock(modal); wheelSum = 0; wheelLast = 0; wheelCooldown = 0;
-    show(index); focusInitial($('modal-close'), viaKeyboard);
+    settle(index); focusInitial($('modal-close'), viaKeyboard);
   }
   $('modal-close').addEventListener('click', close);
   $('info-toggle').addEventListener('click', e => {
@@ -143,8 +210,10 @@
   document.addEventListener('keydown', e => {
     if (!active) return;
     if (e.key === 'Escape') { e.preventDefault(); close(); return; }
-    if (active === modal && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      e.preventDefault(); if (!e.repeat) { const d = e.key === 'ArrowDown' ? 1 : -1; step(d); }
+    if (active === modal && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      // All four keys drive the same horizontal slide - Up/Left = Previous, Down/Right = Next.
+      e.preventDefault();
+      if (!e.repeat) { const d = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1; step(d); }
     }
     if (e.key === 'Tab') {
       const focusable = [...active.querySelectorAll('button, a[href], video[controls]')];
@@ -166,23 +235,26 @@
     }
   }, {passive:false});
   stage.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' || !e.isPrimary) return;
+    // A transition already owns the two current nodes; a fresh drag can only
+    // start once it has settled back down to a single liveNode.
+    if (e.pointerType === 'mouse' || !e.isPrimary || transitioning) return;
     // Leave the native video control strip available for playback interaction.
     if (e.target.tagName === 'VIDEO' && e.clientY > stage.getBoundingClientRect().bottom - 48) return;
-    animation?.cancel(); gesture = {id:e.pointerId, x:e.clientX, y:e.clientY, dx:0};
+    gesture = {id:e.pointerId, x:e.clientX, y:e.clientY, dx:0};
     stage.setPointerCapture(e.pointerId);
   });
   stage.addEventListener('pointermove', e => {
     if (!gesture || gesture.id !== e.pointerId) return;
     gesture.dx = e.clientX - gesture.x;
-    if (stage.firstChild) stage.firstChild.style.transform = `translateX(${gesture.dx}px)`;
+    if (liveNode) liveNode.style.transform = `translateX(${gesture.dx}px)`;
   });
   function endGesture(e, cancelled = false) {
     if (!gesture || gesture.id !== e.pointerId) return;
     const {dx,y} = gesture; gesture = null;
+    // Left swipe (dx<0) = Next (+1); right swipe (dx>0) = Previous (-1).
     const d = dx < 0 ? 1 : -1;
-    if (!cancelled && Math.abs(dx) > Math.max(40,stage.clientWidth*.12) && Math.abs(dx) > Math.abs(e.clientY-y) && step(d,'X')) return;
-    if (stage.firstChild) stage.firstChild.style.transform = '';
+    if (!cancelled && Math.abs(dx) > Math.max(40,stage.clientWidth*.12) && Math.abs(dx) > Math.abs(e.clientY-y) && step(d)) return;
+    if (liveNode) liveNode.style.transform = '';
   }
   stage.addEventListener('pointerup', e => endGesture(e));
   stage.addEventListener('pointercancel', e => endGesture(e,true));

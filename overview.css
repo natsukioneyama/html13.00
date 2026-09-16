@@ -13,7 +13,8 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 #grid { position: relative; }
 .jl-item { display: block; margin: 0; transform-origin: center; transition: transform 180ms ease; }
 .jl-item img, .jl-item video { width: 100%; height: 100%; object-fit: contain; display: block; }
-.jl-item.selected, .jl-item:focus-visible { transform: scale(1.065); z-index: 2; }
+.jl-item:focus-visible { transform: scale(1.065); z-index: 2; }
+.jl-item.selected { transform: scale(0.85); z-index: 2; }
 @media (hover: hover) and (pointer: fine) { .jl-item:hover { transform: scale(0.85); z-index: 2; } }
 .bottom-nav, .modal-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 9px max(var(--edge), env(safe-area-inset-right)) max(9px, env(safe-area-inset-bottom)) max(var(--edge), env(safe-area-inset-left)); min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .bottom-nav { z-index: 5; background: rgba(255,255,255,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
@@ -34,6 +35,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
   :root { --edge: 10px; font-size: 10px; }
   #overview { padding-top: 40px; }
   .stage { inset: 48px 0 64px; }
+  .bottom-nav { font-size: 12px; }
   .info-columns { grid-template-columns: 1fr 1fr 1fr; width: calc(100% - 40px); max-width: 440px; gap: 12px; font-size: 12px; }
   .clients { grid-row: auto; }
   .info-links { font-size: 10px; }

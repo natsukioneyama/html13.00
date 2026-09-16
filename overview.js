@@ -112,6 +112,15 @@
     ], {duration:220, easing:'ease-out'});
     return true;
   }
+  // Shared next/prev step for keyboard, wheel and swipe: loops across the whole
+  // portfolio-data.js sequence (all projects back-to-back), wrapping at the very
+  // first/last media item rather than stopping or looping per-project.
+  function step(direction, axis = 'Y') {
+    if (current < 0) return false;
+    let next = current + direction;
+    if (next >= sequence.length) next = 0; else if (next < 0) next = sequence.length - 1;
+    return show(next, direction, axis);
+  }
   // Safari/WebKit resolves :focus-visible on a script-focused element as true even when
   // the interaction that triggered it was a mouse click on a different element (Chromium/
   // Firefox correctly infer the pointer origin and keep it false). So the visible ring on
@@ -135,7 +144,7 @@
     if (!active) return;
     if (e.key === 'Escape') { e.preventDefault(); close(); return; }
     if (active === modal && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-      e.preventDefault(); if (!e.repeat) { const d = e.key === 'ArrowDown' ? 1 : -1; show(current+d,d); }
+      e.preventDefault(); if (!e.repeat) { const d = e.key === 'ArrowDown' ? 1 : -1; step(d); }
     }
     if (e.key === 'Tab') {
       const focusable = [...active.querySelectorAll('button, a[href], video[controls]')];
@@ -153,7 +162,7 @@
     const delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
     wheelSum += delta;
     if (Math.abs(wheelSum) >= 60) {
-      const d = Math.sign(wheelSum); show(current+d,d); wheelSum = 0; wheelCooldown = now+450;
+      const d = Math.sign(wheelSum); step(d); wheelSum = 0; wheelCooldown = now+450;
     }
   }, {passive:false});
   stage.addEventListener('pointerdown', e => {
@@ -172,7 +181,7 @@
     if (!gesture || gesture.id !== e.pointerId) return;
     const {dx,y} = gesture; gesture = null;
     const d = dx < 0 ? 1 : -1;
-    if (!cancelled && Math.abs(dx) > Math.max(40,stage.clientWidth*.12) && Math.abs(dx) > Math.abs(e.clientY-y) && show(current+d,d,'X')) return;
+    if (!cancelled && Math.abs(dx) > Math.max(40,stage.clientWidth*.12) && Math.abs(dx) > Math.abs(e.clientY-y) && step(d,'X')) return;
     if (stage.firstChild) stage.firstChild.style.transform = '';
   }
   stage.addEventListener('pointerup', e => endGesture(e));

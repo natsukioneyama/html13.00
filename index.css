@@ -18,10 +18,10 @@
   --index-nav-top: 64px;                  /* fixed top offset of the >=1024px project index, just below the two-line brand */
   --index-first-ref-line-gap: 20px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
   --index-featured-label-gap: 16px;       /* space between [ NEWEST FEATURED PROJECT ] and .index-first-ref below it */
+  --index-nav-top: 64px;
+  --index-top-space: var(--index-nav-top);
 }
-@media (min-width: 1024px) {
-  :root { --index-top-space: 220px; }
-}
+
 @media (min-width: 1024px) {
   :root {
     /* First-pass Desktop size, deliberately much larger than before (Stussy-style
@@ -133,7 +133,13 @@
    it (later DOM sibling, same z-index:auto stacking level) - this is the one part
    of this change that isn't pure sizing, but without it the header/caption would be
    literally invisible behind the media. */
-#index-modal-header { line-height: 1.2; cursor: pointer; z-index: 1; }
+/* index Horizontal Modal only - scoped to the #id, not the shared .modal-brand
+   class, so overview.html's own modal-brand and index.html's Information Overlay
+   (.info-brand) are unaffected. color:white is required for the blend to actually
+   invert against arbitrary image content (difference(near-black, X) leaves X almost
+   unchanged - same white+difference pairing already used by .brand/.index-header-nav
+   elsewhere on this page). */
+#index-modal-header { line-height: 1.2; cursor: pointer; z-index: 1; color: white; mix-blend-mode: difference; }
 #index-modal-caption { margin-top: 10px; font-weight: normal; }
 /* Each media's height = the viewport height, full-bleed top to bottom, on every
    device - no reserved header/caption band, no vertical centering. 100vh first as a

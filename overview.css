@@ -44,6 +44,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 .bottom-nav[inert], .brand[inert] { visibility: hidden; }
 .caption { line-height: 1.25; min-height: 30px; }
 .caption span { display: block; }
+
 .overlay { position: fixed; inset: 0; z-index: 20; background: rgba(245,245,245,.72); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 /* Scoped to #modal only (not .overlay, which #info also uses and needs to scroll
    vertically): the image viewer has no native scroll content of its own - horizontal
@@ -61,7 +62,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
   grid-template-columns: 230px;
   gap: 20px;
   width: max-content;
-  margin: 60px auto 0;
+  margin: 90px auto 0;
 }
 
 .clients {
@@ -95,7 +96,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
   grid-template-columns: min(280px, calc(100vw - 40px));
   gap: 20px;
   width: max-content;
-  margin: 60px auto 0;
+  margin: 90px auto 0;
 }
 }
 /* Real handheld phones only (index.html and overview.html share this file) - the

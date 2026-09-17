@@ -44,9 +44,14 @@
   .brand,
   .info-brand,
   .modal-brand {
-    font-size: 18px;
+    font-size: 14px;
+  }
+    #index-modal-caption {
+    font-size: 12px;
   }
 }
+
+
 
 /* .index-header-nav itself now lives in overview.css (loaded before this file on
    both index.html and overview.html), so the two pages' header nav can never drift

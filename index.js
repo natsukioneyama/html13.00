@@ -21,15 +21,15 @@
   // uses). Entries without mediaIndex use media[0] as the cover image. Verified
   // against the current portfolio-data.js.
   const SEQUENCE = [
-    {id: '10-magazine', label: '10 Magazine'},
+    {id: '10-magazine', label: '10 MAGAZINE'},
     {id: 'vogue-adria-danilo-pavlovic', label: 'VOGUE ADRIA'},
-    {id: 'krzysztof-jan', label: 'Krzysztof Jan'},
-    {id: 'carl-diner', label: 'Carl Diner'},
-    {id: 'beauty-antoine-charlie', mediaIndex: 0, label: 'Beauty'},
+    {id: 'krzysztof-jan', label: 'KRZYSZTOF JAN'},
+    {id: 'carl-diner', label: 'CARL DINER'},
+    {id: 'beauty-antoine-charlie', mediaIndex: 0, label: 'BEAUTY'},
     {id: 'replica-man-pavel-golik', label: 'REPLICA MAN'},
     {id: 'beauty-papers-jeremie-monnier', label: 'BEAUTY PAPERS'},
-    {id: 'port-magazine-aude-le-barbey', label: 'PORT Magazine'},
-    {id: 'office-jesper-lund', label: 'Office X KEEN'},
+    {id: 'port-magazine-aude-le-barbey', label: 'PORT MAGAZINE'},
+    {id: 'office-jesper-lund', label: 'OFFICE MAGAZINE X KEEN'},
     {id: 'vogue-mexico-ward-ivan-rafik', label: 'VOGUE MEXICO'},
     {id: 'numero-china-carla-rossi', label: 'NUMÉRO CHINA'},
     {id: 'numero-berlin-boris-ovini', label: 'NUMÉRO BERLIN'},

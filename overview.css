@@ -56,17 +56,46 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 .modal-footer button { font-size: 22px; min-width: 44px; min-height: 44px; text-align: right; }
 .info { overflow-y: auto; overscroll-behavior: contain; }
 .info-brand { z-index: 1; }
-.info-columns { display: grid; grid-template-columns: 150px 170px; gap: 14px; width: max-content; margin: 60px auto 40px; line-height: 1.2; }
-.info-columns p { margin: 0; text-align: justify; }
-.clients { grid-row: span 2; }
-.info-links { display: flex; flex-direction: column; gap: 12px; }
+.info-columns {
+  display: grid;
+  grid-template-columns: 230px;
+  gap: 20px;
+  width: max-content;
+  margin: 60px auto 0;
+}
+
+.clients {
+  grid-row: auto;
+}
+
+.info-columns p {
+  margin: 0;
+  text-align: justify;
+}
+
+.info-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.info-image {
+  display: block;
+  width: 200px;
+  height: auto;
+  margin-top: 40px;
+}
 @media (max-width: 767px) {
   :root { --edge: 10px; font-size: 10px; }
   #overview { padding-top: 40px; }
   .stage { inset: 48px 0 64px; }
   .bottom-nav { font-size: 12px; }
-  .info-columns { grid-template-columns: 1fr 1fr 1fr; width: calc(100% - 40px); max-width: 440px; gap: 12px; font-size: 12px; }
-  .clients { grid-row: auto; }
   .info-links { font-size: 10px; }
+  .info-columns {
+  display: grid;
+  grid-template-columns: min(280px, calc(100vw - 40px));
+  gap: 20px;
+  width: max-content;
+  margin: 60px auto 0;
+}
 }
 @media (prefers-reduced-motion: reduce) { .jl-item img, .jl-item video { transition: none; } }

@@ -114,6 +114,11 @@
   }
   brand.addEventListener('click', e => openInfo(e.detail === 0));
   infoClose.addEventListener('click', closeInfo);
+  // Background-click close: e.target is the element the click actually landed on
+  // (unaffected by bubbling), so this only fires for a direct hit on #index-info
+  // itself, outside .info-columns and the close button - clicking any real content
+  // never closes it.
+  info.addEventListener('click', e => { if (e.target === info) closeInfo(); });
 
   function makeNode(m, project) {
     const node = document.createElement(m.type === 'video' ? 'video' : 'img');

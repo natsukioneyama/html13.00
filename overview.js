@@ -5,6 +5,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const grid = $('grid'), modal = $('modal'), stage = $('stage'), info = $('info');
+  const headerNav = document.querySelector('.index-header-nav');
   const sequence = window.PORTFOLIO_PROJECTS.flatMap(project => project.media.map(media => ({project, media})));
   const fine = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -100,7 +101,7 @@
   function lock(panel) {
     returnFocus = document.activeElement; scrollY = window.scrollY; active = panel;
     Object.assign(document.body.style, {position:'fixed', top:-scrollY+'px', width:'100%'});
-    $('overview').inert = true; $('overview-nav').inert = true; $('info-toggle').inert = true;
+    $('overview').inert = true; $('overview-nav').inert = true; $('info-toggle').inert = true; headerNav.inert = true;
     panel.hidden = false; syncVideos();
   }
   function releaseVideo(node) {
@@ -114,7 +115,7 @@
   function close() {
     if (!active) return;
     disposeAll(); active.hidden = true; active = null; current = -1; gesture = null;
-    $('overview').inert = false; $('overview-nav').inert = false; $('info-toggle').inert = false;
+    $('overview').inert = false; $('overview-nav').inert = false; $('info-toggle').inert = false; headerNav.inert = false;
     $('info-toggle').setAttribute('aria-expanded','false');
     Object.assign(document.body.style, {position:'', top:'', width:''});
     window.scrollTo(0,scrollY); returnFocus?.focus({preventScroll:true}); syncVideos();
@@ -201,11 +202,41 @@
     settle(index); focusInitial($('modal-close'), viaKeyboard);
   }
   $('modal-close').addEventListener('click', close);
+  // Background-click close. .modal-media is position:absolute;inset:0 - its own box
+  // always equals the full .stage rect, by design: the two-node slide transition
+  // (see slide() above) needs outgoing/incoming to occupy that exact same box so
+  // their translateX animations cross over each other correctly. That means a click
+  // anywhere in .stage - including the letterboxed margin object-fit:contain leaves
+  // around a portrait/landscape image - lands on the <img>/<video> itself; e.target
+  // is never `modal` or `stage` there, so an identity check alone can't tell "real
+  // pixels" from "empty margin inside the same box." inContentRect() answers that
+  // from the element's own live geometry (getBoundingClientRect + natural size), not
+  // any fixed/hardcoded margin - it's what object-fit:contain itself computes
+  // internally to place the image, just re-derived here so JS can test a point
+  // against it. A click on modal-brand/modal-footer/modal-close is never even IMG or
+  // VIDEO, so this block doesn't touch their existing behavior at all.
+  function inContentRect(el, x, y) {
+    const rect = el.getBoundingClientRect();
+    const naturalW = el.tagName === 'VIDEO' ? el.videoWidth : el.naturalWidth;
+    const naturalH = el.tagName === 'VIDEO' ? el.videoHeight : el.naturalHeight;
+    if (!naturalW || !naturalH) return true; // size not known yet - treat as content, don't close under it
+    const renderedW = Math.min(rect.width, rect.height * (naturalW / naturalH));
+    const renderedH = renderedW * (naturalH / naturalW);
+    const left = rect.left + (rect.width - renderedW) / 2, top = rect.top + (rect.height - renderedH) / 2;
+    return x >= left && x <= left + renderedW && y >= top && y <= top + renderedH;
+  }
+  modal.addEventListener('click', e => {
+    if (e.target === modal || e.target === stage) { close(); return; }
+    if ((e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') && !inContentRect(e.target, e.clientX, e.clientY)) close();
+  });
   $('info-toggle').addEventListener('click', e => {
     lock(info); $('info-toggle').setAttribute('aria-expanded','true');
     focusInitial($('info-close'), e.detail === 0);
   });
   $('info-close').addEventListener('click', close);
+  // Same background-click-close idea for the Information overlay: only a direct
+  // hit on #info itself (outside .info-columns and the close button) counts.
+  info.addEventListener('click', e => { if (e.target === info) close(); });
   document.addEventListener('visibilitychange', syncVideos);
   document.addEventListener('keydown', e => {
     if (!active) return;

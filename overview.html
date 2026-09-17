@@ -11,10 +11,16 @@
 </head>
 <body>
   <button class="brand" id="info-toggle" aria-expanded="false" aria-controls="info">NATSUKI ONEYAMA<br>MAKEUP ARTIST</button>
+  <!-- Same class/position/behavior as index.html's own header nav (shared rule
+       lives in overview.css) - inerted alongside #overview-nav/#info-toggle while
+       the modal or info overlay is open, see overview.js's lock()/close(). -->
+  <nav class="index-header-nav" aria-label="Site">
+    <a href="index.html">INDEX</a>
+    <a href="mailto:natsukioneyama@gmail.com">CONTACT</a>
+  </nav>
   <main id="overview"><div id="grid" aria-label="Selected portfolio"></div></main>
   <footer class="bottom-nav" id="overview-nav">
     <div class="caption" id="overview-caption" aria-live="polite"></div>
-    <a href="mailto:natsukioneyama@gmail.com">CONTACT</a>
   </footer>
   <section id="modal" class="overlay" role="dialog" aria-modal="true" aria-label="Portfolio media viewer" hidden>
     <div class="modal-brand">NATSUKI ONEYAMA<br>MAKEUP ARTIST</div>

@@ -31,18 +31,13 @@
   }
 }
 
-#index-brand { font-weight: bold; }
+/* #index-brand no longer needs its own font-weight override: overview.css's shared
+   `.brand, .info-brand, .modal-brand` rule is bold now (see the report). */
 .index-thumb { display: block; }
 
-/* Header nav overlays the images (fixed + mix-blend-mode, same technique as
-   .brand) on every breakpoint, rather than a white bar that separates it from the
-   visual. */
-.index-header-nav {
-  display: flex; gap: 10px;
-  position: fixed; z-index: 10; color: white; mix-blend-mode: difference;
-  right: max(var(--edge), env(safe-area-inset-right));
-  top: max(12px, env(safe-area-inset-top));
-}
+/* .index-header-nav itself now lives in overview.css (loaded before this file on
+   both index.html and overview.html), so the two pages' header nav can never drift
+   out of sync - see the report for why. */
 
 #index-main { padding-top: var(--index-top-space); }
 

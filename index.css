@@ -1,48 +1,139 @@
 /* index.html: Selected Works top page. Shares base resets, .brand and .bottom-nav
    positioning/sizing/responsive-behavior with overview.css (loaded first) - only
-   font-weight is overridden here, via id selectors, so overview.html is untouched. */
+   font-weight is overridden here, via id selectors, so overview.html is untouched.
+
+   Layout: one continuous 1-column sequence of 14 giant project thumbnails, the same
+   DOM and CSS on every breakpoint (Stussy-style: no separate mobile/desktop grid).
+   <=1023px (Mobile/Tablet Portrait, incl. 820x1180 iPad) is the full-bleed single
+   column. >=1024px (Desktop/Large Tablet) additionally shows a text project index -
+   see the #index-main grid below for how the main visual stays viewport-centered
+   regardless of that index's width. */
 :root {
   /* First-pass placeholder sizes - not final. Easy to retune from here. */
-  --index-thumb-width: min(46vw, 420px);
-  --index-col-gap: 16px;
-  --index-row-gap: 56px;
+  --index-visual-width: min(46vw, 620px); /* main visual column width, >=1024px only */
+  --index-nav-gap: 40px;                  /* space between the index and the visual column, >=1024px only */
+  --index-top-space: 140px;               /* whitespace above the first thumbnail (<=1023px default) */
+  --index-footer-space: 160px;            /* whitespace before the footer, after the last thumbnail */
+  --index-first-ref-gap: 24px;            /* space between the first-project reference text and its image */
+  --index-nav-top: 64px;                  /* fixed top offset of the >=1024px project index, just below the two-line brand */
+  --index-first-ref-lift: 24px;           /* how far the first-project reference text moves up, >=1024px only */
+  --index-first-ref-line-gap: 20px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
   --index-modal-height: 62vh;
 }
+@media (min-width: 1024px) {
+  :root { --index-top-space: 220px; }
+}
+/* Horizontal Modal's own responsive steps (62/68/76vh) are intentionally on their
+   own breakpoints (768px, 1024px) and must stay independent of the page-layout
+   breakpoint above - do not merge these with --index-top-space's or #index-main's. */
 @media (min-width: 768px) and (max-width: 1023px) {
   :root { --index-modal-height: 68vh; }
 }
 @media (min-width: 1024px) {
   :root {
-    --index-thumb-width: min(34vw, 460px);
-    --index-col-gap: 24px;
-    --index-row-gap: 72px;
+    /* First-pass Desktop size, deliberately much larger than before (Stussy-style
+       giant editorial image) - still a CSS var so it's easy to retune after a look
+       on real devices. min(...) keeps it from ever exceeding the viewport. */
+    --index-visual-width: min(56vw, 900px);
     --index-modal-height: 76vh;
   }
 }
 
 #index-brand { font-weight: bold; }
-#index-nav { justify-content: flex-end; }
-#index-nav a { font-weight: bold; }
-
-#index-main { padding: 96px var(--edge) 96px; }
-.index-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 var(--index-col-gap);
-  align-items: start;
-}
-/* Two independent vertical flows - deliberately not a masonry/packing algorithm:
-   each column stacks its own items, so one column's image heights never affect
-   where the other column's next item lands. */
-.index-col { display: flex; flex-direction: column; align-items: center; gap: var(--index-row-gap); }
 .index-thumb { display: block; }
-.index-thumb img { display: block; width: var(--index-thumb-width); max-width: 100%; height: auto; }
 
-/* Horizontal project modal: a single native-scroll filmstrip (no snap, no JS drag) -
-   gap 0, portrait/landscape share the same height so both read as equally large. */
+/* Header nav overlays the images (fixed + mix-blend-mode, same technique as
+   .brand) on every breakpoint, rather than a white bar that separates it from the
+   visual. */
+.index-header-nav {
+  display: flex; gap: 10px;
+  position: fixed; z-index: 10; color: white; mix-blend-mode: difference;
+  right: max(var(--edge), env(safe-area-inset-right));
+  top: max(12px, env(safe-area-inset-top));
+}
+
+#index-main { padding-top: var(--index-top-space); }
+
+/* >=1024px (Desktop/Large Tablet): main visual column. A 3-track grid -
+   minmax(0,1fr) / auto / minmax(0,1fr) - centers the middle (visual) column on the
+   container: both outer tracks are the same "1fr", so they always end up equal, and
+   minmax(0, ...) stops any content from pulling that equality off (a bare 1fr
+   track's default minimum is its content size, not 0). Column 1 is left empty on
+   purpose (see .index-project-nav below) - it only exists to balance column 3, no
+   JS measurement, no absolute positioning. */
+@media (min-width: 1024px) {
+  #index-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: var(--index-nav-gap); align-items: start; }
+  .index-visual { grid-column: 2; }
+  /* The project index is deliberately taken out of #index-main's grid flow (fixed
+     positioning, same left edge as .brand) so its vertical position tracks the
+     brand, not the main visual's or .index-first-ref's own document position - a
+     grid item would otherwise start at the row's top, i.e. wherever the visual
+     column happens to start. Being out-of-flow also means it takes zero grid track
+     space itself, so it can never affect the column-1/column-3 balance above. */
+  .index-project-nav {
+    position: fixed; z-index: 10;
+    left: max(var(--edge), env(safe-area-inset-left));
+    top: var(--index-nav-top);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .index-project-nav button { text-align: left; white-space: nowrap; }
+}
+/* <=1023px (Mobile/Tablet Portrait, extends the former <=699px mobile presentation
+   up through 820x1180 iPad Portrait): no project index, visual column is the full
+   viewport width. */
+@media (max-width: 1023px) {
+  .index-project-nav { display: none; }
+}
+
+/* The one continuous, gap-0 sequence of giant thumbnails - same DOM and CSS at
+   every breakpoint. .index-visual's own width (set above per breakpoint, or simply
+   100% on <=1023px) is the only thing that changes; each thumbnail is always 100%
+   of that column, so this rule never needs a per-breakpoint override. */
+.index-visual { display: flex; flex-direction: column; gap: 0; width: 100%; max-width: var(--index-visual-width); }
+@media (max-width: 1023px) {
+  .index-visual { max-width: none; }
+}
+.index-thumb img { display: block; width: 100%; height: auto; }
+
+/* The only per-project reference text on the page (see index.js/html) - sits
+   directly before the first thumbnail in normal document flow, so it lands in the
+   same place relative to the visual column on every breakpoint. */
+.index-first-ref { margin-bottom: var(--index-first-ref-gap); line-height: 1.3; font-weight: bold; }
+.index-first-ref p { margin: 0; }
+/* 2nd/3rd line gap, all breakpoints - the 1st/2nd lines stay tight (line-height only). */
+.index-first-ref p:last-child { margin-top: var(--index-first-ref-line-gap); }
+/* >=1024px only: nudge the whole block up. position:relative (not a flow-affecting
+   margin) so the space it would have occupied is untouched - the first thumbnail
+   right after it keeps its exact original top position/centering. */
+@media (min-width: 1024px) {
+  .index-first-ref { position: relative; top: calc(-1 * var(--index-first-ref-lift)); }
+}
+/* <=1023px only: align its left/right edges with the header brand/nav's own edge
+   inset instead of sitting flush with the viewport edge like the giant thumbnails
+   below it do. padding (not margin) so this doesn't touch .index-visual's own
+   width/left edge - box-sizing:border-box (set globally in overview.css) keeps the
+   element at 100% width without overflowing. */
+@media (max-width: 1023px) {
+  .index-first-ref {
+    padding-left: max(var(--edge), env(safe-area-inset-left));
+    padding-right: max(var(--edge), env(safe-area-inset-right));
+  }
+}
+
+.index-project-nav { font-weight: bold; }
+
+.index-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: var(--index-footer-space);
+  padding: 0 var(--edge) 24px;
+}
+
+/* ============ Horizontal project modal (unchanged from the previous pass) ============ */
 #index-modal { touch-action: pan-x; overscroll-behavior-y: none; }
 #index-modal:focus-visible { outline: none; }
-#index-modal-header { line-height: 1.2; }
+/* Brand/caption overlay the image directly (transparent, fixed position) - clicking
+   either closes the modal, same as clicking the surrounding margin. */
+#index-modal-header { line-height: 1.2; cursor: pointer; }
 #index-modal-caption { margin-top: 10px; font-weight: normal; }
 #index-stage {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
@@ -56,8 +147,4 @@
 #index-stage img, #index-stage video {
   height: 100%; width: auto; flex: 0 0 auto; display: block;
   object-fit: contain; user-select: none; -webkit-user-select: none;
-}
-
-@media (max-width: 767px) {
-  #index-main { padding: 72px var(--edge) 72px; }
 }

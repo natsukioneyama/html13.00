@@ -1,38 +1,43 @@
 /* index.html: Selected Works top page.
- * Two independent vertical columns (plain CSS flex, no packing algorithm) plus a
- * per-project horizontal filmstrip modal driven by native scroll (no external
+ * One continuous 1-column sequence of giant project thumbnails, plus (Desktop/Tablet
+ * only) a text project index - both driven by the same SEQUENCE array and the same
+ * openProject() function, so there is exactly one navigation code path. Below that,
+ * a per-project horizontal filmstrip modal driven by native scroll (no external
  * carousel library, no custom pointer-drag - touch gets native momentum for free).
  */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const main = $('index-main'), nav = $('index-nav'), brand = $('index-brand');
+  const main = $('index-main'), brand = $('index-brand');
+  const projectNav = $('index-project-nav'), headerNav = document.querySelector('.index-header-nav');
   const modal = $('index-modal'), stage = $('index-stage'), modalCaption = $('index-modal-caption');
+  const modalHeader = $('index-modal-header');
+  const info = $('index-info'), infoClose = $('index-info-close');
   const projectsById = new Map(window.PORTFOLIO_PROJECTS.map(p => [p.id, p]));
 
-  // Which project (and, for a project reused on both sides, which specific media
-  // item) backs each thumbnail - verified against the current portfolio-data.js.
-  // Entries without mediaIndex use media[0] as the cover image.
-  const LEFT = [
-    {id: '10-magazine'},
-    {id: 'krzysztof-jan'},
-    {id: 'beauty-antoine-charlie', mediaIndex: 0},
-    {id: 'replica-man-pavel-golik'},
-    {id: 'port-magazine-aude-le-barbey'},
-    {id: 'vogue-mexico-ward-ivan-rafik'},
-    {id: 'numero-berlin-boris-ovini'}
-  ];
-  const RIGHT = [
-    {id: 'vogue-adria-danilo-pavlovic'},
-    {id: 'carl-diner'},
-    {id: 'beauty-antoine-charlie', mediaIndex: 1},
-    {id: 'beauty-papers-jeremie-monnier'},
-    {id: 'office-jesper-lund'},
-    {id: 'numero-china-carla-rossi'},
-    {id: 'sans-title-tess-petronio'}
+  // The single 14-project sequence, in display order, shared by the giant-thumbnail
+  // visual column and the text project index. `label` is the curated short name shown
+  // in the text index (distinct from project.title, which the modal caption still
+  // uses). Entries without mediaIndex use media[0] as the cover image. Verified
+  // against the current portfolio-data.js.
+  const SEQUENCE = [
+    {id: '10-magazine', label: '10 Magazine'},
+    {id: 'vogue-adria-danilo-pavlovic', label: 'Vogue Adria'},
+    {id: 'krzysztof-jan', label: 'Krzysztof'},
+    {id: 'carl-diner', label: 'Carl Diner'},
+    {id: 'beauty-antoine-charlie', mediaIndex: 0, label: 'Beauty'},
+    {id: 'beauty-antoine-charlie', mediaIndex: 1, label: 'Beauté'},
+    {id: 'replica-man-pavel-golik', label: 'Replica Man'},
+    {id: 'beauty-papers-jeremie-monnier', label: 'Beauty Papers'},
+    {id: 'port-magazine-aude-le-barbey', label: 'Port'},
+    {id: 'office-jesper-lund', label: 'Office'},
+    {id: 'vogue-mexico-ward-ivan-rafik', label: 'Vogue Mexico'},
+    {id: 'numero-china-carla-rossi', label: 'Numero China'},
+    {id: 'numero-berlin-boris-ovini', label: 'Numero Berlin'},
+    {id: 'sans-title-tess-petronio', label: 'Sans Titre'}
   ];
 
-  function buildColumn(container, entries) {
+  function buildVisual(container, entries) {
     entries.forEach(({id, mediaIndex = 0}) => {
       const project = projectsById.get(id);
       if (!project) { console.warn(`index.html: unknown project id "${id}"`); return; }
@@ -54,22 +59,62 @@
       container.append(button);
     });
   }
-  buildColumn($('index-col-left'), LEFT);
-  buildColumn($('index-col-right'), RIGHT);
+  buildVisual($('index-visual'), SEQUENCE);
+
+  function buildProjectNav(container, entries) {
+    entries.forEach(({id, label}) => {
+      const project = projectsById.get(id);
+      if (!project) return;
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = label;
+      button.addEventListener('click', () => openProject(project));
+      container.append(button);
+    });
+  }
+  buildProjectNav(projectNav, SEQUENCE);
 
   // Scroll lock/restore: same technique as overview.js's lock()/close() (fixed body,
-  // remember scrollY, inert the background, restore and refocus on close).
+  // remember scrollY, inert the background, restore and refocus on close). The
+  // project index and header nav are inerted alongside main/brand since they're the
+  // interactive background elements while the modal is open.
   let returnFocus = null, scrollY = 0;
   function lock() {
     returnFocus = document.activeElement; scrollY = window.scrollY;
     Object.assign(document.body.style, {position: 'fixed', top: -scrollY + 'px', width: '100%'});
-    main.inert = true; nav.inert = true; brand.inert = true;
+    main.inert = true; headerNav.inert = true; brand.inert = true;
   }
   function unlock() {
-    main.inert = false; nav.inert = false; brand.inert = false;
+    main.inert = false; headerNav.inert = false; brand.inert = false;
     Object.assign(document.body.style, {position: '', top: '', width: ''});
     window.scrollTo(0, scrollY); returnFocus?.focus({preventScroll: true});
   }
+
+  // Safari/WebKit resolves :focus-visible on a script-focused element as true even when
+  // the interaction that triggered it was a mouse click (see overview.js, which fixed
+  // the same bug on its own info-close button) - suppressed the same way here via the
+  // shared .no-ring class/CSS rule from overview.css.
+  function focusInitial(el, viaKeyboard) {
+    el.classList.toggle('no-ring', !viaKeyboard);
+    el.focus({preventScroll: true});
+  }
+
+  // Information overlay: same content/structure/close-by-button-or-Escape behavior as
+  // overview.html's #info, reusing this file's own lock()/unlock() (which don't
+  // reference the project modal at all, so they apply equally here).
+  function openInfo(viaKeyboard) {
+    lock();
+    info.hidden = false;
+    brand.setAttribute('aria-expanded', 'true');
+    focusInitial(infoClose, viaKeyboard);
+  }
+  function closeInfo() {
+    if (info.hidden) return;
+    info.hidden = true;
+    brand.setAttribute('aria-expanded', 'false');
+    unlock();
+  }
+  brand.addEventListener('click', e => openInfo(e.detail === 0));
+  infoClose.addEventListener('click', closeInfo);
 
   function makeNode(m, project) {
     const node = document.createElement(m.type === 'video' ? 'video' : 'img');
@@ -86,83 +131,56 @@
     return node;
   }
 
-  // Fixed 3-cycle infinite loop: [PREV][MAIN][NEXT], each a full, independent copy of
-  // the project's own media in the same order. The DOM is built once and never grows -
-  // navigation only ever rebases scrollLeft by +/-cycleWidth between these three
-  // pixel-identical copies. Because PREV/MAIN/NEXT are exact repeats exactly cycleWidth
-  // apart, shifting by that amount always lands on identical content, and - critically -
-  // there is always a full cycle of real buffer content on both sides of MAIN,
-  // regardless of viewport width (as long as the viewport itself isn't wider than one
-  // full cycle, which holds for every project here at any realistic window size).
-  //
-  // An earlier version used a single clone image at each end instead of a full extra
-  // cycle. Measured on a 1440px-wide desktop window with a 4-image project: clientWidth
-  // 1440, scrollWidth 3420, maxScrollLeft 1980, cycleWidth 2394, trailing-clone offset
-  // 2907. maxScrollLeft (1980) never reached the trailing clone's offset (2907) at all,
-  // so forward continuous scroll had nowhere left to go and stopped dead. Going the
-  // other way, rebasing by +cycleWidth from scrollLeft 0 targets 2394 - past
-  // maxScrollLeft, so the browser silently clamped it, and even unclamped there wasn't
-  // enough DOM after that point to fill the viewport - both are exactly why a single
-  // clone image can't guarantee visual equivalence on a wide viewport; a full cycle of
-  // real media on each side is what actually guarantees it.
-  let stripEls = [], mainStart = 0, mainEnd = 0, cycleWidth = 0, mainStartOffset = 0, mainEndOffset = 0;
+  // A project has a clear first and last image - one set only, no clones, no loop.
+  // Reaching either end simply stops the native scroll at its natural 0/max; closing
+  // on "one further push past the end" is handled separately below.
+  let stripEls = [];
   function buildStrip(project) {
     stage.replaceChildren();
-    const n = project.media.length;
-    const prev = project.media.map(m => makeNode(m, project));
-    const main = project.media.map(m => makeNode(m, project));
-    const next = project.media.map(m => makeNode(m, project));
-    stripEls = [...prev, ...main, ...next];
+    stripEls = project.media.map(m => makeNode(m, project));
     stripEls.forEach(el => stage.append(el));
-    mainStart = n; mainEnd = 2 * n - 1;
-    mainStartOffset = stripEls[mainStart].offsetLeft;
-    const lastMain = stripEls[mainEnd];
-    mainEndOffset = lastMain.offsetLeft + lastMain.offsetWidth;
-    cycleWidth = mainEndOffset - mainStartOffset;
-    stage.scrollLeft = mainStartOffset; // start at the beginning of the MAIN cycle
+    stage.scrollLeft = 0;
   }
   function maxScroll() { return Math.max(0, stage.scrollWidth - stage.clientWidth); }
-
-  // Whenever the leading scroll position drifts out of MAIN's own span (into NEXT
-  // going forward, or PREV going backward), shift by one cycleWidth to land on the
-  // pixel-identical position inside MAIN. This is checked against MAIN's own bounds,
-  // not the strip's native scroll min/max, precisely because - as measured above -
-  // the native max can sit well short of where a rebase would need to trigger.
-  function rebaseIfNeeded() {
-    if (!cycleWidth) return;
-    if (stage.scrollLeft >= mainEndOffset) stage.scrollLeft -= cycleWidth;
-    else if (stage.scrollLeft < mainStartOffset) stage.scrollLeft += cycleWidth;
-  }
 
   // Arrow-key navigation: continuous time-based scroll while a key is held, not a
   // discrete per-image step. Speed is driven by elapsed time between animation
   // frames, not by how many keydown-repeat events fire, so it advances at a constant
-  // rate regardless of the OS's repeat rate. This also sidesteps the previous
-  // per-image stepper entirely, which used an instant (non-animated) scrollTo
-  // specifically on the step that crossed the loop boundary - that produced a real,
-  // deterministic, every-single-lap visual snap back to the first image, independent
-  // of any browser/platform timing.
+  // rate regardless of the OS's repeat rate.
+  //
+  // Edge-close: reaching the last (or first) image must not close the modal by
+  // itself - only a further push past it should. Once continuous scroll is pinned
+  // at 0 or maxScroll (the browser clamps further attempts, so scrollLeft stops
+  // changing), an elapsed-time timer starts; the modal only closes once the key has
+  // stayed held at that pinned edge past EDGE_CLOSE_MS, not the instant it arrives.
   const ARROW_SCROLL_SPEED = 700; // px/s, first pass - easy to retune
-  let heldArrowKey = null, arrowRafId = null, arrowLastT = null;
+  const EDGE_CLOSE_MS = 260; // first pass - a short, deliberate extra push, not instant
+  let heldArrowKey = null, arrowRafId = null, arrowLastT = null, edgeHoldStart = null;
   function arrowFrame(t) {
-    if (heldArrowKey !== 'ArrowRight' && heldArrowKey !== 'ArrowLeft') { arrowRafId = null; arrowLastT = null; return; }
+    if (heldArrowKey !== 'ArrowRight' && heldArrowKey !== 'ArrowLeft') { arrowRafId = null; arrowLastT = null; edgeHoldStart = null; return; }
     if (arrowLastT == null) arrowLastT = t;
     const dt = t - arrowLastT; arrowLastT = t;
     const dir = heldArrowKey === 'ArrowRight' ? 1 : -1;
     stage.scrollLeft += dir * ARROW_SCROLL_SPEED * (dt / 1000);
-    rebaseIfNeeded();
+    const atEdge = dir > 0 ? stage.scrollLeft >= maxScroll() - 0.5 : stage.scrollLeft <= 0.5;
+    if (atEdge) {
+      if (edgeHoldStart == null) edgeHoldStart = t;
+      else if (t - edgeHoldStart >= EDGE_CLOSE_MS) { closeProject(); return; }
+    } else {
+      edgeHoldStart = null;
+    }
     arrowRafId = requestAnimationFrame(arrowFrame);
   }
   function startArrowScroll(key) {
     if (heldArrowKey === key) return;
-    heldArrowKey = key;
+    heldArrowKey = key; edgeHoldStart = null;
     if (arrowRafId == null) { arrowLastT = null; arrowRafId = requestAnimationFrame(arrowFrame); }
   }
   function stopArrowScroll(key) {
-    if (heldArrowKey === key) heldArrowKey = null;
+    if (heldArrowKey === key) { heldArrowKey = null; edgeHoldStart = null; }
   }
   function stopArrowScrollAll() {
-    heldArrowKey = null;
+    heldArrowKey = null; edgeHoldStart = null;
     if (arrowRafId != null) { cancelAnimationFrame(arrowRafId); arrowRafId = null; }
     arrowLastT = null;
   }
@@ -170,15 +188,32 @@
   // switching apps), no keyup ever arrives - stop on blur so scrolling can't get stuck.
   addEventListener('blur', stopArrowScrollAll);
 
-  // Touch/swipe keeps native scroll; only rebase once scrolling has fully settled
-  // (debounced), never on an in-flight 'scroll' event. Correcting mid-gesture risks
-  // fighting the browser's own still-resolving touch/momentum/rubber-band physics at
-  // that exact boundary. Waiting for quiet guarantees native motion is already fully
-  // done before this touches it.
+  // Touch: native horizontal scroll is unchanged (no custom pointer-drag). Detecting
+  // "swiped past the last/first image" from touch is inherently limited - once
+  // scrollLeft is clamped at 0/max, the DOM gives no signal for *how hard* the user
+  // kept dragging past it, only that a touch is still active. This tracks whether a
+  // touch is currently down and, once scrolling has settled (debounced, so it never
+  // fights the browser's own still-resolving momentum/rubber-band physics) pinned at
+  // an edge while that touch is still active, starts the same edge-hold timer as the
+  // keyboard path. This is a best-effort heuristic, not verified on real iOS Safari -
+  // see the report.
+  let touchActive = false, touchEdgeHoldStart = null;
+  stage.addEventListener('touchstart', () => { touchActive = true; touchEdgeHoldStart = null; }, {passive: true});
+  stage.addEventListener('touchend', () => { touchActive = false; touchEdgeHoldStart = null; }, {passive: true});
+  stage.addEventListener('touchcancel', () => { touchActive = false; touchEdgeHoldStart = null; }, {passive: true});
   let scrollSyncTimer = null;
   stage.addEventListener('scroll', () => {
     clearTimeout(scrollSyncTimer);
-    scrollSyncTimer = setTimeout(rebaseIfNeeded, 120);
+    scrollSyncTimer = setTimeout(() => {
+      const max = maxScroll();
+      const atEdge = stage.scrollLeft <= 0.5 || stage.scrollLeft >= max - 0.5;
+      if (atEdge && touchActive) {
+        if (touchEdgeHoldStart == null) touchEdgeHoldStart = performance.now();
+        else if (performance.now() - touchEdgeHoldStart >= EDGE_CLOSE_MS) closeProject();
+      } else {
+        touchEdgeHoldStart = null;
+      }
+    }, 120);
   }, {passive: true});
 
   function openProject(project) {
@@ -196,18 +231,24 @@
     if (modal.hidden) return;
     clearTimeout(scrollSyncTimer);
     stopArrowScrollAll();
+    touchActive = false; touchEdgeHoldStart = null;
     stage.replaceChildren(); stripEls = [];
     modal.hidden = true;
     unlock();
   }
 
-  // Click/tap on the margin around the strip closes; clicking an actual image does not.
+  // Click/tap on the margin, or on the brand/caption overlay, closes; clicking an
+  // actual image does not.
   modal.addEventListener('click', e => {
-    if (e.target === modal || e.target === stage) closeProject();
+    if (e.target === modal || e.target === stage || modalHeader.contains(e.target)) closeProject();
   });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (!modal.hidden) { e.preventDefault(); closeProject(); }
+      else if (!info.hidden) { e.preventDefault(); closeInfo(); }
+      return;
+    }
     if (modal.hidden) return;
-    if (e.key === 'Escape') { e.preventDefault(); closeProject(); return; }
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       // Ignore the OS's own key-repeat events entirely - our own rAF loop (started
@@ -218,22 +259,5 @@
   });
   document.addEventListener('keyup', e => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') stopArrowScroll(e.key);
-  });
-  let resizeTimer;
-  addEventListener('resize', () => {
-    if (modal.hidden || !stripEls.length) return;
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      // The strip's height (and so every image's width, via aspect-ratio) can change
-      // across breakpoints, so MAIN's bounds need recomputing. There's no single
-      // "current position within MAIN" worth preserving across a breakpoint change
-      // (every image's width just changed), so this just re-anchors to MAIN's start,
-      // same as a fresh open.
-      mainStartOffset = stripEls[mainStart].offsetLeft;
-      const lastMain = stripEls[mainEnd];
-      mainEndOffset = lastMain.offsetLeft + lastMain.offsetWidth;
-      cycleWidth = mainEndOffset - mainStartOffset;
-      stage.scrollLeft = mainStartOffset;
-    }, 150);
   });
 })();

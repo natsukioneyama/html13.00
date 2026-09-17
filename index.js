@@ -22,18 +22,18 @@
   // against the current portfolio-data.js.
   const SEQUENCE = [
     {id: '10-magazine', label: '10 Magazine'},
-    {id: 'vogue-adria-danilo-pavlovic', label: 'Vogue Adria'},
-    {id: 'krzysztof-jan', label: 'Krzysztof'},
+    {id: 'vogue-adria-danilo-pavlovic', label: 'VOGUE ADRIA'},
+    {id: 'krzysztof-jan', label: 'Krzysztof Jan'},
     {id: 'carl-diner', label: 'Carl Diner'},
     {id: 'beauty-antoine-charlie', mediaIndex: 0, label: 'Beauty'},
-    {id: 'replica-man-pavel-golik', label: 'Replica Man'},
-    {id: 'beauty-papers-jeremie-monnier', label: 'Beauty Papers'},
-    {id: 'port-magazine-aude-le-barbey', label: 'Port'},
-    {id: 'office-jesper-lund', label: 'Office'},
-    {id: 'vogue-mexico-ward-ivan-rafik', label: 'Vogue Mexico'},
-    {id: 'numero-china-carla-rossi', label: 'Numero China'},
-    {id: 'numero-berlin-boris-ovini', label: 'Numero Berlin'},
-    {id: 'sans-title-tess-petronio', label: 'Sans Titre'}
+    {id: 'replica-man-pavel-golik', label: 'REPLICA MAN'},
+    {id: 'beauty-papers-jeremie-monnier', label: 'BEAUTY PAPERS'},
+    {id: 'port-magazine-aude-le-barbey', label: 'PORT Magazine'},
+    {id: 'office-jesper-lund', label: 'Office X KEEN'},
+    {id: 'vogue-mexico-ward-ivan-rafik', label: 'VOGUE MEXICO'},
+    {id: 'numero-china-carla-rossi', label: 'NUMÉRO CHINA'},
+    {id: 'numero-berlin-boris-ovini', label: 'NUMÉRO BERLIN'},
+    {id: 'sans-title-tess-petronio', label: 'TESS PETRONIO'}
   ];
 
   function buildVisual(container, entries) {

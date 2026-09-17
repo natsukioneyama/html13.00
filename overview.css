@@ -21,11 +21,24 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 }
 #overview { padding: 40px var(--edge) 64px; }
 #grid { position: relative; }
-.jl-item { display: block; margin: 0; transform-origin: center; transition: transform 180ms ease; }
-.jl-item img, .jl-item video { width: 100%; height: 100%; object-fit: contain; display: block; }
-.jl-item:focus-visible { transform: scale(1.065); z-index: 2; }
-.jl-item.selected { transform: scale(0.85); z-index: 2; }
-@media (hover: hover) and (pointer: fine) { .jl-item:hover { transform: scale(0.85); z-index: 2; } }
+.jl-item { display: block; margin: 0; }
+/* transform-origin/transition live on the inner media, not this wrapper: the
+   wrapper is the absolutely-positioned, justifiedLayout-sized grid cell that
+   :hover/mouseenter/mouseleave hit-test against, so its own box must never resize -
+   only the visual (img/video) scales. That keeps the hover hit-box static and is
+   what stops the shrink-hover-out/grow-hover-in flicker loop at a thumbnail's edge. */
+.jl-item img, .jl-item video { width: 100%; height: 100%; object-fit: contain; display: block; transform-origin: center; transition: transform 180ms ease; }
+.jl-item:focus-visible { z-index: 2; }
+.jl-item:focus-visible img, .jl-item:focus-visible video { transform: scale(1.065); }
+.jl-item.selected { z-index: 2; }
+.jl-item.selected img, .jl-item.selected video { transform: scale(0.85); }
+/* .hover-group is toggled by overview.js on every thumbnail belonging to the
+   hovered one's project (not just the hovered element itself), replacing the old
+   bare `.jl-item:hover` rule - see the report for why. */
+@media (hover: hover) and (pointer: fine) {
+  .jl-item.hover-group { z-index: 2; }
+  .jl-item.hover-group img, .jl-item.hover-group video { transform: scale(0.85); }
+}
 .bottom-nav, .modal-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 9px max(var(--edge), env(safe-area-inset-right)) max(9px, env(safe-area-inset-bottom)) max(var(--edge), env(safe-area-inset-left)); min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .bottom-nav { z-index: 5; background: rgba(255,255,255,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .bottom-nav[inert], .brand[inert] { visibility: hidden; }
@@ -56,4 +69,4 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
   .clients { grid-row: auto; }
   .info-links { font-size: 10px; }
 }
-@media (prefers-reduced-motion: reduce) { .jl-item { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .jl-item img, .jl-item video { transition: none; } }

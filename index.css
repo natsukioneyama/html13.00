@@ -16,8 +16,8 @@
   --index-footer-space: 160px;            /* whitespace before the footer, after the last thumbnail */
   --index-first-ref-gap: 24px;            /* space between the first-project reference text and its image */
   --index-nav-top: 64px;                  /* fixed top offset of the >=1024px project index, just below the two-line brand */
-  --index-first-ref-lift: 24px;           /* how far the first-project reference text moves up, >=1024px only */
   --index-first-ref-line-gap: 20px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
+  --index-featured-label-gap: 16px;       /* space between [ NEWEST FEATURED PROJECT ] and .index-first-ref below it */
 }
 @media (min-width: 1024px) {
   :root { --index-top-space: 220px; }
@@ -82,6 +82,19 @@
 }
 .index-thumb img { display: block; width: 100%; height: auto; }
 
+/* Independent from .index-first-ref on purpose (own class, own rules, no shared
+   selector) so either can be retuned later without touching the other - deliberately
+   NOT reusing .index-first-ref's position:relative lift or its padding here. Plain
+   document flow: it just sits above .index-first-ref and pushes it (and the first
+   thumbnail after it) down by its own flow height, no manual offset to keep in sync. */
+.index-featured-label { font-weight: bold; margin-bottom: var(--index-featured-label-gap); }
+@media (max-width: 1023px) {
+  .index-featured-label {
+    padding-left: max(var(--edge), env(safe-area-inset-left));
+    padding-right: max(var(--edge), env(safe-area-inset-right));
+  }
+}
+
 /* The only per-project reference text on the page (see index.js/html) - sits
    directly before the first thumbnail in normal document flow, so it lands in the
    same place relative to the visual column on every breakpoint. */
@@ -89,12 +102,7 @@
 .index-first-ref p { margin: 0; }
 /* 2nd/3rd line gap, all breakpoints - the 1st/2nd lines stay tight (line-height only). */
 .index-first-ref p:last-child { margin-top: var(--index-first-ref-line-gap); }
-/* >=1024px only: nudge the whole block up. position:relative (not a flow-affecting
-   margin) so the space it would have occupied is untouched - the first thumbnail
-   right after it keeps its exact original top position/centering. */
-@media (min-width: 1024px) {
-  .index-first-ref { position: relative; top: calc(-1 * var(--index-first-ref-lift)); }
-}
+
 /* <=1023px only: align its left/right edges with the header brand/nav's own edge
    inset instead of sitting flush with the viewport edge like the giant thumbnails
    below it do. padding (not margin) so this doesn't touch .index-visual's own

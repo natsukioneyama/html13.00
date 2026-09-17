@@ -55,6 +55,12 @@
     entries.forEach(e => e.isIntersecting ? visibleVideos.add(e.target) : visibleVideos.delete(e.target));
     syncVideos();
   });
+  // Groups thumbnails by project.id (the existing stable identifier from
+  // portfolio-data.js, not a title string compare) so hovering any one of a
+  // project's thumbnails can highlight the whole project - built incrementally as
+  // each button is created below, since sequence.map() reuses the same `project`
+  // object reference for every media item of that project.
+  const buttonsByProject = new Map();
   const buttons = sequence.map(({project, media: m}, index) => {
     const button = document.createElement('button'); button.className = 'jl-item';
     button.type = 'button'; button.setAttribute('aria-label', `${project.title}, image ${index + 1}: open media`);
@@ -68,8 +74,23 @@
       node.width = m.width; node.height = m.height; node.loading = 'lazy'; node.decoding = 'async';
     }
     node.draggable = false; button.append(node); grid.append(button);
-    button.addEventListener('mouseenter', () => { if (fine()) caption($('overview-caption'), index); });
-    button.addEventListener('mouseleave', () => { if (fine()) caption($('overview-caption'), selected); });
+    if (!buttonsByProject.has(project.id)) buttonsByProject.set(project.id, []);
+    buttonsByProject.get(project.id).push(button);
+    // Hovering scales this button's whole project (see .hover-group in
+    // overview.css), not just itself. Moving the pointer between two thumbnails of
+    // the same project fires this project's mouseleave and mouseenter back to back
+    // within the same synchronous pointer-move handling, before the next paint, so
+    // the group's highlight never visibly drops in between - no debounce needed.
+    button.addEventListener('mouseenter', () => {
+      if (!fine()) return;
+      caption($('overview-caption'), index);
+      buttonsByProject.get(project.id).forEach(b => b.classList.add('hover-group'));
+    });
+    button.addEventListener('mouseleave', () => {
+      if (!fine()) return;
+      caption($('overview-caption'), selected);
+      buttonsByProject.get(project.id).forEach(b => b.classList.remove('hover-group'));
+    });
     button.addEventListener('focus', () => caption($('overview-caption'), index));
     button.addEventListener('click', e => {
       if (fine() || e.detail === 0 || selected === index) openModal(index, e.detail === 0);

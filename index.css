@@ -14,13 +14,14 @@
   --index-nav-gap: 40px;                  /* space between the index and the visual column, >=1024px only */
   --index-top-space: 140px;               /* whitespace above the first thumbnail (<=1023px default) */
   --index-footer-space: 160px;            /* whitespace before the footer, after the last thumbnail */
-  --index-first-ref-gap: 24px;            /* space between the first-project reference text and its image */
-  --index-nav-top: 64px;                  /* fixed top offset of the >=1024px project index, just below the two-line brand */
+
+  --index-nav-top: 100px;
+  --index-featured-label-gap: 30px;       /* space between [ NEWEST FEATURED PROJECT ] and .index-first-ref below it */
   --index-first-ref-line-gap: 20px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
-  --index-featured-label-gap: 16px;       /* space between [ NEWEST FEATURED PROJECT ] and .index-first-ref below it */
-  --index-nav-top: 64px;
+  --index-first-ref-gap: 50px;            /* space between the first-project reference text and its image */
   --index-top-space: var(--index-nav-top);
 }
+
 
 @media (min-width: 1024px) {
   :root {
@@ -34,6 +35,18 @@
 /* #index-brand no longer needs its own font-weight override: overview.css's shared
    `.brand, .info-brand, .modal-brand` rule is bold now (see the report). */
 .index-thumb { display: block; }
+
+.brand, .info-brand, .modal-brand {
+  font-size: 16px;
+}
+
+@media (max-width: 699px) {
+  .brand,
+  .info-brand,
+  .modal-brand {
+    font-size: 20px;
+  }
+}
 
 /* .index-header-nav itself now lives in overview.css (loaded before this file on
    both index.html and overview.html), so the two pages' header nav can never drift

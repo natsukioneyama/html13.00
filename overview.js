@@ -95,8 +95,19 @@
     button.addEventListener('click', e => {
       if (fine() || e.detail === 0 || selected === index) openModal(index, e.detail === 0);
       else {
-        buttons[selected]?.classList.remove('selected'); selected = index;
-        button.classList.add('selected'); caption($('overview-caption'), index);
+        // Touch has no hover, so a first tap previews (this branch) and a second
+        // tap on the same item opens it (the `selected === index` case above) -
+        // unchanged. What's new: the preview now also scales the whole project via
+        // the same .hover-group class/CSS the Desktop mouseenter path uses above,
+        // not just this one button, so touch and hover show the same grouped
+        // feedback. Clears the previous selection's group first (not just its own
+        // .selected) so switching preview targets doesn't leave a stale group scaled.
+        buttons[selected]?.classList.remove('selected');
+        if (selected >= 0) buttonsByProject.get(sequence[selected].project.id).forEach(b => b.classList.remove('hover-group'));
+        selected = index;
+        button.classList.add('selected');
+        buttonsByProject.get(project.id).forEach(b => b.classList.add('hover-group'));
+        caption($('overview-caption'), index);
       }
     });
     return button;

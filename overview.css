@@ -34,11 +34,11 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 .jl-item.selected img, .jl-item.selected video { transform: scale(0.85); }
 /* .hover-group is toggled by overview.js on every thumbnail belonging to the
    hovered one's project (not just the hovered element itself), replacing the old
-   bare `.jl-item:hover` rule - see the report for why. */
-@media (hover: hover) and (pointer: fine) {
-  .jl-item.hover-group { z-index: 2; }
-  .jl-item.hover-group img, .jl-item.hover-group video { transform: scale(0.85); }
-}
+   bare `.jl-item:hover` rule - see the report for why. Not media-query-gated: the
+   same class also drives the touch tap-to-preview flow (coarse pointers), so this
+   must render there too, not only under (hover:hover) and (pointer:fine). */
+.jl-item.hover-group { z-index: 2; }
+.jl-item.hover-group img, .jl-item.hover-group video { transform: scale(0.85); }
 .bottom-nav, .modal-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 9px max(var(--edge), env(safe-area-inset-right)) max(9px, env(safe-area-inset-bottom)) max(var(--edge), env(safe-area-inset-left)); min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .bottom-nav { z-index: 5; background: rgba(255,255,255,.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 .bottom-nav[inert], .brand[inert] { visibility: hidden; }
@@ -97,5 +97,17 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
   width: max-content;
   margin: 60px auto 0;
 }
+}
+/* Real handheld phones only (index.html and overview.html share this file) - the
+   above <=767px block's 10px reads too small on an actual iPhone. Every text
+   element this needs to affect (.brand, .index-header-nav, .index-featured-label,
+   .index-first-ref) already just inherits :root's font-size with no per-element
+   override, so raising it back up here is enough on its own - no individual
+   overrides added. Deliberately its own breakpoint (699px, matching index.css's own
+   Mobile/Tablet Portrait split) rather than widening the 767px block above, so the
+   700-767px sliver (part of index.css's Tablet range) keeps its current, unrelated
+   10px behavior exactly as-is. */
+@media (max-width: 699px) {
+  :root { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .jl-item img, .jl-item video { transition: none; } }

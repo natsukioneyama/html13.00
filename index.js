@@ -205,11 +205,23 @@
   stage.addEventListener('touchstart', () => { touchActive = true; touchEdgeHoldStart = null; }, {passive: true});
   stage.addEventListener('touchend', () => { touchActive = false; touchEdgeHoldStart = null; }, {passive: true});
   stage.addEventListener('touchcancel', () => { touchActive = false; touchEdgeHoldStart = null; }, {passive: true});
+  // A normal quick swipe past the edge lifts the finger (touchend, touchActive
+  // becomes false) well before the native momentum/rubber-band animation actually
+  // settles back at 0/maxScroll, so the debounced touchActive check below alone
+  // almost never fires on a real device - that's the reported iPhone bug. iOS's
+  // elastic overscroll genuinely reports scrollLeft outside [0, maxScroll] while
+  // bouncing (not just a visual effect - the DOM property itself briefly reads past
+  // the edge), so checking every raw scroll event for that excursion catches the
+  // "swiped past the edge" gesture directly, independent of whether the finger is
+  // still down. Kept as a small OVERSCROLL_PX tolerance, not a hard 0/max check, so
+  // normal clamped scrolling never triggers it by accident.
+  const OVERSCROLL_PX = 8;
   let scrollSyncTimer = null;
   stage.addEventListener('scroll', () => {
+    const max = maxScroll();
+    if (stage.scrollLeft < -OVERSCROLL_PX || stage.scrollLeft > max + OVERSCROLL_PX) { closeProject(); return; }
     clearTimeout(scrollSyncTimer);
     scrollSyncTimer = setTimeout(() => {
-      const max = maxScroll();
       const atEdge = stage.scrollLeft <= 0.5 || stage.scrollLeft >= max - 0.5;
       if (atEdge && touchActive) {
         if (touchEdgeHoldStart == null) touchEdgeHoldStart = performance.now();

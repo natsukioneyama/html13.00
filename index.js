@@ -26,7 +26,6 @@
     {id: 'krzysztof-jan', label: 'Krzysztof'},
     {id: 'carl-diner', label: 'Carl Diner'},
     {id: 'beauty-antoine-charlie', mediaIndex: 0, label: 'Beauty'},
-    {id: 'beauty-antoine-charlie', mediaIndex: 1, label: 'Beauté'},
     {id: 'replica-man-pavel-golik', label: 'Replica Man'},
     {id: 'beauty-papers-jeremie-monnier', label: 'Beauty Papers'},
     {id: 'port-magazine-aude-le-barbey', label: 'Port'},
@@ -237,10 +236,10 @@
     unlock();
   }
 
-  // Click/tap on the margin, or on the brand/caption overlay, closes; clicking an
-  // actual image does not.
+  // Click/tap on the brand/caption overlay closes; clicking the background margin
+  // or an actual image does not.
   modal.addEventListener('click', e => {
-    if (e.target === modal || e.target === stage || modalHeader.contains(e.target)) closeProject();
+    if (modalHeader.contains(e.target)) closeProject();
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {

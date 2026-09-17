@@ -18,16 +18,9 @@
   --index-nav-top: 64px;                  /* fixed top offset of the >=1024px project index, just below the two-line brand */
   --index-first-ref-lift: 24px;           /* how far the first-project reference text moves up, >=1024px only */
   --index-first-ref-line-gap: 20px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
-  --index-modal-height: 62vh;
 }
 @media (min-width: 1024px) {
   :root { --index-top-space: 220px; }
-}
-/* Horizontal Modal's own responsive steps (62/68/76vh) are intentionally on their
-   own breakpoints (768px, 1024px) and must stay independent of the page-layout
-   breakpoint above - do not merge these with --index-top-space's or #index-main's. */
-@media (min-width: 768px) and (max-width: 1023px) {
-  :root { --index-modal-height: 68vh; }
 }
 @media (min-width: 1024px) {
   :root {
@@ -35,7 +28,6 @@
        giant editorial image) - still a CSS var so it's easy to retune after a look
        on real devices. min(...) keeps it from ever exceeding the viewport. */
     --index-visual-width: min(56vw, 900px);
-    --index-modal-height: 76vh;
   }
 }
 
@@ -128,16 +120,28 @@
   padding: 0 var(--edge) 24px;
 }
 
-/* ============ Horizontal project modal (unchanged from the previous pass) ============ */
+/* ============ Horizontal project modal ============ */
 #index-modal { touch-action: pan-x; overscroll-behavior-y: none; }
 #index-modal:focus-visible { outline: none; }
 /* Brand/caption overlay the image directly (transparent, fixed position) - clicking
-   either closes the modal, same as clicking the surrounding margin. */
-#index-modal-header { line-height: 1.2; cursor: pointer; }
+   either closes the modal (see index.js; clicking the media or the background
+   margin does not). z-index:1 (same value/reason as overview.css's own .info-brand)
+   is required now that #index-stage is full height and would otherwise paint over
+   it (later DOM sibling, same z-index:auto stacking level) - this is the one part
+   of this change that isn't pure sizing, but without it the header/caption would be
+   literally invisible behind the media. */
+#index-modal-header { line-height: 1.2; cursor: pointer; z-index: 1; }
 #index-modal-caption { margin-top: 10px; font-weight: normal; }
+/* Each media's height = the viewport height, full-bleed top to bottom, on every
+   device - no reserved header/caption band, no vertical centering. 100vh first as a
+   fallback, then 100dvh overrides it where supported: 100dvh tracks the *current*
+   visible viewport as iOS Safari's address bar shows/hides, instead of 100vh's fixed
+   "largest possible" viewport, which is what caused the classic mobile Safari
+   overflow/clipping issue - no JS viewport measurement needed either way. */
 #index-stage {
-  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-  height: var(--index-modal-height);
+  position: absolute; left: 0; right: 0; top: 0;
+  height: 100vh;
+  height: 100dvh;
   display: flex; gap: 0;
   overflow-x: auto; overflow-y: hidden;
   -webkit-overflow-scrolling: touch;

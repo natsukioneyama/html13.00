@@ -16,9 +16,9 @@
   --index-footer-space: 160px;            /* whitespace before the footer, after the last thumbnail */
 
   --index-nav-top: 100px;
-  --index-featured-label-gap: 30px;       /* space between [ NEWEST FEATURED PROJECT ] and .index-first-ref below it */
-  --index-first-ref-line-gap: 20px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
-  --index-first-ref-gap: 50px;            /* space between the first-project reference text and its image */
+  --index-featured-label-gap: 15px;       /* space between [ NEWEST FEATURED PROJECT ] and .index-first-ref below it */
+  --index-first-ref-line-gap: 10px;       /* vertical gap between its 2nd and 3rd lines, all breakpoints */
+  --index-first-ref-gap: 20px;            /* space between the first-project reference text and its image */
   --index-top-space: var(--index-nav-top);
 }
 
@@ -29,6 +29,14 @@
        giant editorial image) - still a CSS var so it's easy to retune after a look
        on real devices. min(...) keeps it from ever exceeding the viewport. */
     --index-visual-width: min(56vw, 900px);
+    /* .index-project-nav's own top, >=1024px only - deliberately NOT the shared
+       --index-nav-top (that one also drives #index-main's padding-top on every
+       breakpoint, via --index-top-space, so changing it would shift the central
+       thumbnail column too, including on mobile). This is only for how far down
+       .index-caption (see below, itself still at --index-nav-top) pushes the
+       index below it: measured caption height (~106px, the featured-label +
+       first-ref block's natural height at 10 MAGAZINE's 3-line max) + a 20px gap. */
+    --index-project-nav-top: 226px;
   }
 }
 
@@ -37,18 +45,23 @@
 .index-thumb { display: block; }
 
 .brand, .info-brand, .modal-brand {
-  font-size: 16px;
+  font-size: 14px;
 }
+
+   #index-modal-caption {
+    font-size: 10px;
+  }
 
 @media (max-width: 699px) {
   .brand,
   .info-brand,
   .modal-brand {
-    font-size: 14px;
+    font-size: 16px;
   }
     #index-modal-caption {
     font-size: 12px;
   }
+  .index-header-nav { font-size: 10px; }
 }
 
 
@@ -67,7 +80,7 @@
    purpose (see .index-project-nav below) - it only exists to balance column 3, no
    JS measurement, no absolute positioning. */
 @media (min-width: 1024px) {
-  #index-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: var(--index-nav-gap); align-items: start; }
+  #index-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: var(--index-nav-gap); align-items: start; padding-top: 0;}
   .index-visual { grid-column: 2; }
   /* The project index is deliberately taken out of #index-main's grid flow (fixed
      positioning, same left edge as .brand) so its vertical position tracks the
@@ -78,16 +91,45 @@
   .index-project-nav {
     position: fixed; z-index: 10;
     left: max(var(--edge), env(safe-area-inset-left));
-    top: var(--index-nav-top);
+    top: var(--index-project-nav-top);
     display: flex; flex-direction: column; gap: 10px;
   }
-  .index-project-nav button { text-align: left; white-space: nowrap; }
+  .index-project-nav button { position: relative; text-align: left; white-space: nowrap; }
+  /* Active underline: marks "the project the caption currently shows" (index.js's
+     updateCaption), not hover - a separate, plain, fixed-length line, never
+     text-decoration (which would scale with the label's own character count).
+     ::after is absolutely positioned against the button (position:relative above)
+     so it never adds to the flex column's own `gap: 10px` between buttons - the
+     other rows' spacing is untouched regardless of whether a line is drawn. left:0
+     lines up with the button's own text (buttons have no padding - overview.css's
+     global reset). Sized down from the caption's own scale for this nav's smaller
+     12px text: 26x2px, a small 4px gap below the text. */
+  .index-project-nav button.is-active::after {
+    content: '';
+    position: absolute; left: 0; top: 100%; margin-top: 4px;
+    width: var(--index-active-line-width); height: 1px;
+    background: #000;
+  }
+  /* Left fixed-UI dynamic caption: BRAND -> CAPTION -> .index-project-nav, all in
+     the same fixed left column (not the central .index-visual - see report). Same
+     left formula as .brand/.index-project-nav (not computed/measured) so all three
+     share one exact left edge; same top as .index-project-nav used to have before
+     this feature pushed it down, so the caption starts right where the nav used to. */
+  .index-caption {
+    position: fixed; z-index: 10;
+    left: max(var(--edge), env(safe-area-inset-left));
+    top: var(--index-nav-top);
+  }
 }
 /* <=1023px (Mobile/Tablet Portrait, extends the former <=699px mobile presentation
    up through 820x1180 iPad Portrait): no project index, visual column is the full
    viewport width. */
 @media (max-width: 1023px) {
   .index-project-nav { display: none; }
+  /* Left fixed-UI caption is PC-only (see .index-caption above) - without this it
+     would render at its default static position, at the top of #index-main ahead
+     of .index-visual, visibly shifting the mobile layout. */
+  .index-caption { display: none; }
 }
 
 /* The one continuous, gap-0 sequence of giant thumbnails - same DOM and CSS at

@@ -1,4 +1,4 @@
-:root { font-family: Arial, Helvetica, sans-serif; color: #191919; background: #fff; font-size: 12px; --edge: 14px; }
+:root { font-family: Arial, Helvetica, sans-serif; color: #191919; --bg: #9d0303; background: var(--bg); font-size: 12px; --edge: 14px; }
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, a { color: inherit; font: inherit; -webkit-tap-highlight-color: transparent; }
@@ -8,16 +8,17 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 .no-ring:focus-visible { outline: none; }
 [hidden] { display: none !important; }
 .brand, .info-brand, .modal-brand { position: fixed; left: max(var(--edge), env(safe-area-inset-left)); top: max(12px, env(safe-area-inset-top)); text-align: left; line-height: 1.2; font-weight: bold; }
-.brand { z-index: 10; color: white; mix-blend-mode: difference; }
+.brand { z-index: 10; color: var(--bg); mix-blend-mode: difference; }
 /* Shared by index.html and overview.html (both load this file) so the two pages'
    top-right nav can never drift apart - same overlay-on-image technique as .brand
    (fixed + mix-blend-mode) rather than a white bar that separates it from the
    visual, on every breakpoint. */
 .index-header-nav {
   display: flex; gap: 10px;
-  position: fixed; z-index: 10; color: white; mix-blend-mode: difference;
+  position: fixed; z-index: 10; color: var(--bg); mix-blend-mode: difference;
   right: max(var(--edge), env(safe-area-inset-right));
   top: max(12px, env(safe-area-inset-top));
+  font-weight: bold;
 }
 #overview { padding: 40px var(--edge) 64px; }
 #grid { position: relative; }
@@ -77,13 +78,15 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
 .info-links {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
 }
+
 .info-image {
   display: block;
   width: 200px;
   height: auto;
-  margin-top: 40px;
+  margin-top: 10px;
 }
 @media (max-width: 767px) {
   :root { --edge: 10px; font-size: 10px; }
@@ -96,7 +99,7 @@ button:focus-visible, a:focus-visible { outline: 1px solid currentColor; outline
   grid-template-columns: min(280px, calc(100vw - 40px));
   gap: 20px;
   width: max-content;
-  margin: 90px auto 0;
+  margin: 70px auto 0;
 }
 }
 /* Real handheld phones only (index.html and overview.html share this file) - the

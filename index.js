@@ -15,6 +15,75 @@
   const info = $('index-info'), infoClose = $('index-info-close');
   const projectsById = new Map(window.PORTFOLIO_PROJECTS.map(p => [p.id, p]));
 
+  // Left fixed-UI dynamic caption (PC only, >=1024px - see report). Lives between
+  // #index-brand and .index-project-nav in the same fixed-left column (index.css),
+  // not in the central .index-visual. Hand-curated per-project caption content,
+  // deliberately kept out of portfolio-data.js: issue/publication metadata like
+  // this exists nowhere in that file (confirmed against the current file), and this
+  // is display-only copy for this one page's left UI, not portfolio data. Edit this
+  // object directly to add/change a project's label or lines - e.g. a future
+  // '[FEATURED PROJECT]' entry - nothing else needs to change.
+  const INDEX_CAPTIONS = {
+    '10-magazine': {
+      label: '[NEWEST FEATURED PROJECT]',
+      lines: [
+        '10 MAGAZINE',
+        'ISSUE 77  AUTUMN/WINTER 2026',
+        'PHOTOGRAPHER: Ferry van der Nat'
+      ]
+    },
+      'vogue-adria-danilo-pavlovic': {
+    label: '[FEATURED PROJECT]',
+    lines: [
+      'VOGUE ADRIA',
+      'SUMMER 2026',
+      'PHOTOGRAPHER: Danilo Pavlovic'
+    ]
+  }
+  
+  };
+
+  // Built once, in place, rather than as per-project DOM - hover and scroll both
+  // just rewrite this same node's content (see updateCaption below).
+  const caption = document.createElement('div');
+  caption.className = 'index-caption';
+  const captionLabel = document.createElement('div');
+  captionLabel.className = 'index-featured-label';
+  const captionRef = document.createElement('div');
+  captionRef.className = 'index-first-ref';
+  caption.append(captionLabel, captionRef);
+  main.insertBefore(caption, projectNav);
+
+  // The single source of truth for "what the caption (and the left index's active
+  // underline) currently show" - called both from the left-index mouseenter handler
+  // and from the scroll-driven IntersectionObserver below, so the two update paths
+  // can never disagree. Projects with no INDEX_CAPTIONS entry hide the caption
+  // entirely (no title/line1 fallback) - inline style so it wins over both this
+  // breakpoint's `position: fixed` and <=1023px's `display: none`.
+  function updateCaption(project) {
+    const entry = INDEX_CAPTIONS[project.id];
+    caption.style.display = entry ? '' : 'none';
+    if (entry) {
+      captionLabel.textContent = entry.label || '';
+      captionLabel.style.visibility = entry.label ? '' : 'hidden';
+      captionRef.replaceChildren(...entry.lines.map(text => {
+        const p = document.createElement('p');
+        p.textContent = text;
+        return p;
+      }));
+    }
+    // "Active" here means "the project the caption is currently showing" - not
+    // hover state - so this runs from both update paths above, never independently.
+    // Independent of whether project has an INDEX_CAPTIONS entry: the underline
+    // always tracks the current project, caption visibility does not gate it.
+    projectNav.querySelectorAll('button').forEach(button => {
+      const isActive = button.dataset.projectId === project.id;
+      button.classList.toggle('is-active', isActive);
+      if (isActive) button.setAttribute('aria-current', 'true');
+      else button.removeAttribute('aria-current');
+    });
+  }
+
   // The single 14-project sequence, in display order, shared by the giant-thumbnail
   // visual column and the text project index. `label` is the curated short name shown
   // in the text index (distinct from project.title, which the modal caption still
@@ -43,6 +112,7 @@
       const media = project.media[mediaIndex];
       const button = document.createElement('button');
       button.type = 'button'; button.className = 'index-thumb';
+      button.dataset.projectId = id;
       button.setAttribute('aria-label', `Open ${project.title || project.line1 || id}`);
       const img = document.createElement('img');
       // index.html displays these thumbnails large, so it uses the existing 1200px-class
@@ -66,11 +136,62 @@
       if (!project) return;
       const button = document.createElement('button');
       button.type = 'button'; button.textContent = label;
+      button.dataset.projectId = id;
       button.addEventListener('click', () => openProject(project));
+      // PC-only experiment: hovering a left-index entry scrolls the matching
+      // giant thumbnail (same id, via data-project-id) to viewport center.
+      // No effect on <=1023px since .index-project-nav is display:none there
+      // and a hidden button never receives mouseenter.
+      button.addEventListener('mouseenter', () => {
+        const thumb = document.querySelector(`.index-thumb[data-project-id="${id}"]`);
+        thumb?.scrollIntoView({behavior: 'auto', block: 'center'});
+        updateCaption(project);
+      });
       container.append(button);
     });
   }
   buildProjectNav(projectNav, SEQUENCE);
+
+  // Active-underline length: fixed to the widest button's own rendered width, not
+  // the active project's - computed once, here, from the actual buttons (not a
+  // guessed/hardcoded px value), so it stays correct if a longer project name is
+  // ever added to SEQUENCE. Deliberately not recomputed on hover/scroll/resize -
+  // see CSS var --index-active-line-width, read by .is-active::after.
+  const navButtonWidths = [...projectNav.querySelectorAll('button')].map(b => b.getBoundingClientRect().width);
+  projectNav.style.setProperty('--index-active-line-width', `${Math.max(...navButtonWidths)}px`);
+
+  // Initial state: whatever is actually first on screen at scroll position 0 -
+  // SEQUENCE[0], not a separate "newest" constant - so this can never disagree with
+  // what the IntersectionObserver below would report once it fires. Run after
+  // buildProjectNav so the left-index buttons it also updates (the active
+  // underline) already exist.
+  updateCaption(projectsById.get(SEQUENCE[0].id));
+
+  // Keeps the caption in sync with plain scrolling too, not just left-index hover:
+  // it always reflects whichever .index-thumb is currently centered in the
+  // viewport. rootMargin shrinks the intersection root to a thin band straddling
+  // the exact vertical center (49% in from top and bottom, not the full 50%, so the
+  // band has a hair of real height instead of collapsing to a single geometric
+  // line - avoids relying on browsers handling a zero-height root perfectly).
+  // Thumbnails are laid out edge-to-edge with no gap (index.css: `gap: 0`), so
+  // exactly one is ever under that band at a time, and scrollIntoView's own
+  // block:'center' lines up with this same band - so the mouseenter handler above
+  // and this observer always agree on the current project, with no flicker.
+  // matchMedia is checked once, here, at load - not on resize - since this feature
+  // is PC-only and the instructions call for no resize listener; .index-thumb
+  // elements exist at every breakpoint (unlike .index-project-nav/.index-caption,
+  // which are hidden <=1023px via CSS), so without this check the observer would
+  // keep recomputing on mobile for no visible effect.
+  if (matchMedia('(min-width: 1024px)').matches) {
+    const thumbObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const project = projectsById.get(entry.target.dataset.projectId);
+        if (project) updateCaption(project);
+      });
+    }, {rootMargin: '-49% 0px -49% 0px', threshold: 0});
+    document.querySelectorAll('.index-thumb').forEach(thumb => thumbObserver.observe(thumb));
+  }
 
   // Scroll lock/restore: same technique as overview.js's lock()/close() (fixed body,
   // remember scrollY, inert the background, restore and refocus on close). The

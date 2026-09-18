@@ -120,6 +120,22 @@
     left: max(var(--edge), env(safe-area-inset-left));
     top: var(--index-nav-top);
   }
+  /* Mobile/Tablet Portrait's static caption (see index.js) is PC-only's opposite -
+     hidden here since >=1024px already has the dynamic .index-caption instead. */
+  .index-mobile-caption { display: none; }
+  /* Scroll runway for the last project: on a tall viewport (e.g. iPad 13" Portrait,
+     1024x1366 - see report), the fixed ~198px after the last thumbnail
+     (--index-footer-space + the footer's own height) isn't enough scrollable
+     distance to ever bring that thumbnail's center - or even its top - up to the
+     viewport's vertical center, so the IntersectionObserver's center-line check
+     (index.js) can never fire for it and the active underline gets stuck on the
+     second-to-last project. 50vh is the worst-case room a center-line check could
+     ever need (enough to bring even a zero-height last thumbnail's top up to
+     center); --index-footer-space is subtracted since that space already
+     contributes some of it, and max(0px, ...) keeps this a no-op on short
+     viewports where the existing footer space is already more than enough.
+     >=1024px only - <=1023px's own continuous scroll/footer spacing is untouched. */
+  .index-visual { padding-bottom: max(0px, calc(30vh - var(--index-footer-space))); }
 }
 /* <=1023px (Mobile/Tablet Portrait, extends the former <=699px mobile presentation
    up through 820x1180 iPad Portrait): no project index, visual column is the full

@@ -54,6 +54,34 @@
   caption.append(captionLabel, captionRef);
   main.insertBefore(caption, projectNav);
 
+  // Mobile/Tablet Portrait (<=1023px - see report) static caption: same
+  // INDEX_CAPTIONS data source as the PC dynamic caption above, just its first
+  // entry, rendered once at load and never updated by hover/scroll (unlike
+  // .index-caption). A plain block in normal document flow, not fixed/sticky, so it
+  // scrolls away with the page - inserted as #index-visual's own previous sibling
+  // (not a child of it) so it sits between the header and the first .index-thumb
+  // without joining the thumbnail sequence itself. Hidden >=1024px in index.css.
+  // Reuses .index-featured-label/.index-first-ref (and their existing <=1023px
+  // padding rules) rather than introducing new typography/spacing CSS.
+  const [, firstCaption] = Object.entries(INDEX_CAPTIONS)[0];
+  const mobileCaption = document.createElement('div');
+  mobileCaption.className = 'index-mobile-caption';
+  if (firstCaption.label) {
+    const mobileCaptionLabel = document.createElement('div');
+    mobileCaptionLabel.className = 'index-featured-label';
+    mobileCaptionLabel.textContent = firstCaption.label;
+    mobileCaption.append(mobileCaptionLabel);
+  }
+  const mobileCaptionRef = document.createElement('div');
+  mobileCaptionRef.className = 'index-first-ref';
+  mobileCaptionRef.append(...firstCaption.lines.map(text => {
+    const p = document.createElement('p');
+    p.textContent = text;
+    return p;
+  }));
+  mobileCaption.append(mobileCaptionRef);
+  main.insertBefore(mobileCaption, $('index-visual'));
+
   // The single source of truth for "what the caption (and the left index's active
   // underline) currently show" - called both from the left-index mouseenter handler
   // and from the scroll-driven IntersectionObserver below, so the two update paths
